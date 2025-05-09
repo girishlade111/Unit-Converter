@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Offline Unit Converter</title>
+  <style>
+    :root {
+      --bg: #fff;
+      --text: #333;
+      --accent: #0077ff;
+      --border: #ddd;
+    }
+    [data-theme="dark"] {
+      --bg: #121212;
+      --text: #f1f1f1;
+      --accent: #03dac6;
+      --border: #444;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 1rem;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    form {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    input, select, button {
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    #result-section {
+      font-size: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    @media (max-width: 600px) {
+      form {
+        grid-template-columns: 1fr 1fr;
+        grid-gap: 0.5rem;
+        align-items: center;
+      }
+      select, input { width: 100%; }
+    }
+
+    /* Dark Mode Override */
+    @media (prefers-color-scheme: dark) {
+      [data-theme="dark"] {
+        background: #1e1e1e;
+        color: #e6e6e6;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Unit Converter</h1>
+    <button id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+  </header>
+
+  <main>
+    <form id="converter-form">
+      <input type="number" id="input-value" placeholder="Enter value" required />
+      <select id="from-unit"></select>
+      <select id="to-unit"></select>
+      <button type="submit">Convert</button>
+    </form>
+
+    <section id="result-section" aria-live="polite"></section>
+
+    <section id="history">
+      <h2>Conversion History</h2>
+      <table>
+        <thead>
+          <tr><th>Input</th><th>From</th><th>To</th><th>Result</th><th>Time</th></tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+      <button id="clear-history">Clear History</button>
+    </section>
+  </main>
+
+  <script>
+    // ======== UNIT DATA (JSON Embedded) ========
+    const UNITS_DATA = {
+      "length": [
+        {"name": "Meter", "symbol": "m", "factor": 1},
+        {"name": "Kilometer", "symbol": "km", "factor": 1000},
+        {"name": "Mile", "symbol": "mi", "factor": 1609.34}
+      ],
+      "weight": [
+        {"name": "Gram", "symbol": "g", "factor": 1},
+        {"name": "Kilogram", "symbol": "kg", "factor": 1000},
+        {"name": "Pound", "symbol": "lb", "factor": 453.592}
+      ],
+      "temperature": [
+        {"name": "Celsius", "symbol": "°C", "type": "temp"},
+        {"name": "Fahrenheit", "symbol": "°F", "type": "temp"},
+        {"name": "Kelvin", "symbol": "K", "type": "temp"}
+      ]
+    };
+
+    // ======== STORAGE UTILITY ========
+    const Storage = {
+      saveHistory: (history) => localStorage.setItem('conversionHistory', JSON.stringify(history)),
+      getHistory: () => JSON.parse(localStorage.getItem('conversionHistory') || '[]'),
+      clearHistory: () => localStorage.removeItem('conversionHistory'),
+      getTheme: () => localStorage.getItem('theme') || 'light',
+      saveTheme: (theme) => localStorage.setItem('theme', theme)
+    };
+
+    // ======== UNIT CONVERTER CLASS ========
+    class UnitConverter {
+      constructor(unitsData) {
+        this.units = unitsData;
+      }
+
+      convert(value, fromUnit, toUnit) {
+        const from = this._findUnit(fromUnit);
+        const to = this._findUnit(toUnit);
+        if (!from || !to) return null;
+
+        if (from.type === 'temp' && to.type === 'temp') {
+          return this._convertTemperature(value, from.symbol, to.symbol);
+        }
+        return (value * from.factor) / to.factor;
+      }
+
+      _findUnit(nameOrSymbol) {
+        for (const category in this.units) {
+          const unit = this.units[category].find(u => 
+            u.name === nameOrSymbol || u.symbol === nameOrSymbol
+          );
+          if (unit) return unit;
+        }
+        return null;
+      }
+
+      _convertTemperature(value, from, to) {
+        if (from === '°C' && to === '°F') return (value * 9/5) + 32;
+        if (from === '°F' && to === '°C') return (value - 32) * 5/9;
+        if (from === 'K' && to === '°C') return value - 273.15;
+        if (from === '°C' && to === 'K') return value + 273.15;
+        if (from === '°F' && to === 'K') return ((value - 32) * 5/9) + 273.15;
+        if (from === 'K' && to === '°F') return ((value - 273.15) * 9/5) + 32;
+        return value; // Same unit
+      }
+
+      getUnits() {
+        const flat = [];
+        for (const category in this.units) {
+          flat.push(...this.units[category].map(u => u.name));
+        }
+        return [...new Set(flat)];
+      }
+    }
+
+    // ======== APP INITIALIZATION ========
+    document.addEventListener('DOMContentLoaded', () => {
+      const theme = Storage.getTheme();
+      document.documentElement.setAttribute('data-theme', theme);
+      const themeToggle = document.getElementById('theme-toggle');
+      themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+
+      const converter = new UnitConverter(UNITS_DATA);
+      const fromSelect = document.getElementById('from-unit');
+      const toSelect = document.getElementById('to-unit');
+      const resultSection = document.getElementById('result-section');
+      const historyBody = document.getElementById('history-body');
+      let history = Storage.getHistory();
+
+      const units = converter.getUnits();
+      [fromSelect, toSelect].forEach(select => {
+        units.forEach(unit => {
+          const option = document.createElement('option');
+          option.value = unit;
+          option.textContent = unit;
+          select.appendChild(option);
+        });
+      });
+
+      // Form submission
+      document.getElementById('converter-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const value = parseFloat(document.getElementById('input-value').value);
+        const from = fromSelect.value;
+        const to = toSelect.value;
+
+        if (!value || from === to) {
+          resultSection.textContent = from === to ? 'Please select different units.' : 'Enter a valid number.';
+          return;
+        }
+
+        const result = converter.convert(value, from, to);
+        resultSection.textContent = `${value} ${from} = ${result.toFixed(4)} ${to}`;
+
+        const timestamp = new Date().toLocaleString();
+        const entry = { value, from, to, result, timestamp };
+        history.unshift(entry);
+        Storage.saveHistory(history);
+        renderHistory();
+      });
+
+      // Theme toggle
+      themeToggle.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        Storage.saveTheme(next);
+        themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+      });
+
+      // Clear history
+      document.getElementById('clear-history').addEventListener('click', () => {
+        Storage.clearHistory();
+        history = [];
+        renderHistory();
+      });
+
+      function renderHistory() {
+        historyBody.innerHTML = '';
+        history.forEach(entry => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${entry.value}</td>
+            <td>${entry.from}</td>
+            <td>${entry.to}</td>
+            <td>${entry.result.toFixed(4)}</td>
+            <td>${entry.timestamp}</td>
+          `;
+          historyBody.appendChild(row);
+        });
+      }
+
+      renderHistory();
+    });
+  </script>
+</body>
+</html>
