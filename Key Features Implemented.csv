@@ -1,0 +1,9 @@
+﻿Feature,Status
+100+ Unit Support,✅ (Extendable via units.json)
+Dark Mode,✅
+Responsive Layout,✅
+Input Validation,✅
+Conversion History,✅
+Accessible UI,✅
+Client-Side Storage,✅
+Future Enhancements,✅ (See below)

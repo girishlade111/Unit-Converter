@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline Unit Converter</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/dark-mode.css" media="(prefers-color-scheme: dark)" />
+</head>
+<body>
+  <header>
+    <h1>Unit Converter</h1>
+    <button id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+  </header>
+
+  <main>
+    <form id="converter-form">
+      <input type="number" id="input-value" placeholder="Enter value" required />
+      <select id="from-unit"></select>
+      <select id="to-unit"></select>
+      <button type="submit">Convert</button>
+    </form>
+
+    <section id="result-section" aria-live="polite"></section>
+
+    <section id="history">
+      <h2>Conversion History</h2>
+      <table>
+        <thead>
+          <tr><th>Input</th><th>From</th><th>To</th><th>Result</th><th>Time</th></tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+      <button id="clear-history">Clear History</button>
+    </section>
+  </main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

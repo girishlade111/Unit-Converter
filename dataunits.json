@@ -1,0 +1,17 @@
+{
+  "length": [
+    {"name": "Meter", "symbol": "m", "factor": 1},
+    {"name": "Kilometer", "symbol": "km", "factor": 1000},
+    {"name": "Mile", "symbol": "mi", "factor": 1609.34}
+  ],
+  "weight": [
+    {"name": "Gram", "symbol": "g", "factor": 1},
+    {"name": "Kilogram", "symbol": "kg", "factor": 1000},
+    {"name": "Pound", "symbol": "lb", "factor": 453.592}
+  ],
+  "temperature": [
+    {"name": "Celsius", "symbol": "°C", "type": "temp"},
+    {"name": "Fahrenheit", "symbol": "°F", "type": "temp"},
+    {"name": "Kelvin", "symbol": "K", "type": "temp"}
+  ]
+}
